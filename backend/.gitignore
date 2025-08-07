@@ -1,0 +1,50 @@
+## Ignore Visual Studio temporary files, build results, and
+## user-specific files
+
+# Build results
+bin/
+obj/
+
+# NuGet packages
+*.nupkg
+# The packages folder can be ignored if using PackageReference
+packages/
+
+# Others
+*.log
+*.tlog
+*.vspscc
+*.vssscc
+*.cache
+*.dbmdl
+*.bak
+*.backup
+*.mdf
+*.ldf
+*.sqlite
+
+# Visual Studio
+.vscode/
+.vs/
+.idea/
+
+# Rider
+*.sln.iml
+
+# Web/Front-end
+node_modules/
+bower_components/
+wwwroot/lib/
+wwwroot/dist/
+
+# Publish output
+publish/
+*.Publish.xml
+
+# Dotnet specific
+project.lock.json
+project.fragment.lock.json
+artifacts/
+
+# dotenv environment files
+.env
