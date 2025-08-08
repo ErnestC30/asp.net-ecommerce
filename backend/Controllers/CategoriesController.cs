@@ -52,13 +52,13 @@ namespace backend.Controllers
         // PUT: api/Categories/5
         // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
         [HttpPut("{id}")]
-        public async Task<IActionResult> PutCategory(long id, Category category)
+        public async Task<IActionResult> PutCategory(long id, [FromBody] CategoryUpdateDto dto)
         {
-            if (id != category.Id)
-            {
-                return BadRequest();
-            }
+            var category = await _context.Categories.FindAsync(id);
+            if (category == null) return NotFound();
 
+            category.Name = dto.Name;
+            category.Description = dto.Description;
             _context.Entry(category).State = EntityState.Modified;
 
             try
@@ -67,14 +67,7 @@ namespace backend.Controllers
             }
             catch (DbUpdateConcurrencyException)
             {
-                if (!CategoryExists(id))
-                {
-                    return NotFound();
-                }
-                else
-                {
-                    throw;
-                }
+                throw;
             }
 
             return NoContent();
@@ -114,10 +107,6 @@ namespace backend.Controllers
             return NoContent();
         }
 
-        private bool CategoryExists(long id)
-        {
-            return _context.Categories.Any(e => e.Id == id);
-        }
 
         private static CategoryDto CategoryToCategoryDto(Category category)
         {
@@ -137,7 +126,9 @@ namespace backend.Controllers
                 Name = category.Name,
                 Slug = category.Slug,
                 Description = category.Description,
-                Products = category.Products
+                Products = category.Products,
+                CreatedAt = category.CreatedAt,
+                UpdatedAt = category.UpdatedAt
             };
         }
     }
