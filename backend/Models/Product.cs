@@ -11,4 +11,6 @@ public class Product : BaseEntity
     public decimal DiscountPrice { get; set; }
     public int Quantity { get; set; }
     public bool IsActive { get; set; }
+    public long? CategoryId { get; set; }
+    public Category? Category { get; set; }
 }

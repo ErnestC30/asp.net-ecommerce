@@ -9,7 +9,7 @@ var builder = WebApplication.CreateBuilder(args);
 string connectionString = builder.Configuration.GetConnectionString("DefaultConnection") ?? throw new Exception("DB_CONNECTION_STRING is not set.");
 
 // Add services to the container.
-builder.Services.AddDbContext<ApiDbContext>(opt => opt.UseNpgsql(connectionString));
+builder.Services.AddDbContext<ApiDbContext>(opt => opt.UseNpgsql(connectionString).UseSnakeCaseNamingConvention());
 
 
 builder.Services.AddControllers();

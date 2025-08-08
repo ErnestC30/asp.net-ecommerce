@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using backend.Models;
@@ -11,9 +12,11 @@ using backend.Models;
 namespace backend.Migrations
 {
     [DbContext(typeof(ApiDbContext))]
-    partial class ApiDbContextModelSnapshot : ModelSnapshot
+    [Migration("20250808191920_InitialProductAndCategory")]
+    partial class InitialProductAndCategory
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -67,10 +70,6 @@ namespace backend.Migrations
 
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("Id"));
 
-                    b.Property<long?>("CategoryId")
-                        .HasColumnType("bigint")
-                        .HasColumnName("category_id");
-
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("created_at");
@@ -115,25 +114,7 @@ namespace backend.Migrations
                     b.HasKey("Id")
                         .HasName("pk_products");
 
-                    b.HasIndex("CategoryId")
-                        .HasDatabaseName("ix_products_category_id");
-
                     b.ToTable("products", (string)null);
-                });
-
-            modelBuilder.Entity("backend.Models.Product", b =>
-                {
-                    b.HasOne("backend.Models.Category", "Category")
-                        .WithMany("Products")
-                        .HasForeignKey("CategoryId")
-                        .HasConstraintName("fk_products_categories_category_id");
-
-                    b.Navigation("Category");
-                });
-
-            modelBuilder.Entity("backend.Models.Category", b =>
-                {
-                    b.Navigation("Products");
                 });
 #pragma warning restore 612, 618
         }
