@@ -11,6 +11,7 @@ namespace backend.Models
         { }
 
         public DbSet<Product> Products { get; set; }
+        public DbSet<ProductImage> ProductImages { get; set; }
         public DbSet<Category> Categories { get; set; }
 
         protected override void OnModelCreating(ModelBuilder builder)
@@ -21,6 +22,12 @@ namespace backend.Models
             .HasMany(e => e.Products)
             .WithOne(e => e.Category)
             .HasForeignKey(e => e.CategoryId)
+            .HasPrincipalKey(e => e.Id);
+
+            builder.Entity<Product>()
+            .HasMany(e => e.ProductImages)
+            .WithOne(e => e.Product)
+            .HasForeignKey(e => e.ProductId)
             .HasPrincipalKey(e => e.Id);
         }
 
