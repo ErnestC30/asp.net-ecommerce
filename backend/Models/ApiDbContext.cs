@@ -1,10 +1,11 @@
+using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 
 using backend.Helpers;
 
 namespace backend.Models
 {
-    public class ApiDbContext : DbContext
+    public class ApiDbContext : IdentityDbContext<AppUser>
     {
         public ApiDbContext(DbContextOptions<ApiDbContext> options) : base(options)
         { }
@@ -12,9 +13,11 @@ namespace backend.Models
         public DbSet<Product> Products { get; set; }
         public DbSet<Category> Categories { get; set; }
 
-        protected override void OnModelCreating(ModelBuilder modelBuilder)
+        protected override void OnModelCreating(ModelBuilder builder)
         {
-            modelBuilder.Entity<Category>()
+            base.OnModelCreating(builder);
+
+            builder.Entity<Category>()
             .HasMany(e => e.Products)
             .WithOne(e => e.Category)
             .HasForeignKey(e => e.CategoryId)
