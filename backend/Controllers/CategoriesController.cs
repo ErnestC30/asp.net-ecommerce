@@ -24,11 +24,11 @@ namespace backend.Controllers
 
         // GET: api/Categories
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<CategoryDto>>> GetCategories()
+        public async Task<ActionResult<IEnumerable<CategoryInfoDto>>> GetCategories()
         {
 
             var categoriesDto = await _context.Categories
-                .Select(c => CategoryToCategoryDto(c))
+                .Select(c => CategoryToCategoryInfoDto(c))
                 .ToListAsync();
 
             return categoriesDto;
@@ -76,7 +76,7 @@ namespace backend.Controllers
         // POST: api/Categories
         // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
         [HttpPost]
-        public async Task<ActionResult<Category>> PostCategory(CreateCategoryDto dto)
+        public async Task<ActionResult<Category>> PostCategory([FromBody] CreateCategoryDto dto)
         {
 
             var category = new Category
@@ -108,9 +108,9 @@ namespace backend.Controllers
         }
 
 
-        private static CategoryDto CategoryToCategoryDto(Category category)
+        private static CategoryInfoDto CategoryToCategoryInfoDto(Category category)
         {
-            return new CategoryDto
+            return new CategoryInfoDto
             {
                 Name = category.Name,
                 Slug = category.Slug,
@@ -126,7 +126,7 @@ namespace backend.Controllers
                 Name = category.Name,
                 Slug = category.Slug,
                 Description = category.Description,
-                Products = category.Products,
+                // Products = category.Products,
                 CreatedAt = category.CreatedAt,
                 UpdatedAt = category.UpdatedAt
             };

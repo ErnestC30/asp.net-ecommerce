@@ -8,6 +8,6 @@ public class CategoryDetailDto
     public string? Description { get; set; }
     public DateTime CreatedAt { get; set; }
     public DateTime? UpdatedAt { get; set; }
-    public ICollection<Product> Products { get; set; } = new List<Product>(); // should return a Dto here as well?
+    // public ICollection<Product> Products { get; set; } = new List<Product>(); // should return a Dto here as well?
 
 }

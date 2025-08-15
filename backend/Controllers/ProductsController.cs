@@ -6,7 +6,10 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
+using backend.Interfaces;
+using backend.Services;
 using backend.Models;
+using backend.Models.ProductDto;
 
 namespace backend.Controllers
 {
@@ -15,22 +18,26 @@ namespace backend.Controllers
     public class ProductsController : ControllerBase
     {
         private readonly ApiDbContext _context;
+        private readonly IProductService _productService;
 
-        public ProductsController(ApiDbContext context)
+        public ProductsController(ApiDbContext context, IProductService productService)
         {
             _context = context;
+            _productService = productService;
         }
 
         // GET: api/Products
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<Product>>> GetProducts()
+        public async Task<ActionResult<IEnumerable<ProductDetailDto>>> GetProducts()
         {
-            return await _context.Products.ToListAsync();
+            var products = await _context.Products.Select(p => _productService.ProductToProductDetailDto(p)).ToListAsync();
+
+            return products;
         }
 
         // GET: api/Products/5
         [HttpGet("{id}")]
-        public async Task<ActionResult<Product>> GetProduct(long id)
+        public async Task<ActionResult<ProductDetailDto>> GetProduct(long id)
         {
             var product = await _context.Products.FindAsync(id);
 
@@ -39,7 +46,8 @@ namespace backend.Controllers
                 return NotFound();
             }
 
-            return product;
+            var productDto = _productService.ProductToProductDetailDto(product);
+            return productDto;
         }
 
         // PUT: api/Products/5
@@ -76,10 +84,9 @@ namespace backend.Controllers
         // POST: api/Products
         // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
         [HttpPost]
-        public async Task<ActionResult<Product>> PostProduct(Product product)
+        public async Task<ActionResult<Product>> PostProduct([FromBody] CreateProductDto createProductDto)
         {
-            _context.Products.Add(product);
-            await _context.SaveChangesAsync();
+            var product = await _productService.CreateProduct(createProductDto);
 
             return CreatedAtAction("GetProduct", new { id = product.Id }, product);
         }
