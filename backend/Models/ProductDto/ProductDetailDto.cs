@@ -10,7 +10,7 @@ public class ProductDetailDto
     public required string Slug { get; set; }
     public string? Description { get; set; }
     public decimal Price { get; set; }
-    public decimal DiscountPrice { get; set; }
+    public decimal? DiscountPrice { get; set; }
     public int Quantity { get; set; }
     public bool IsActive { get; set; }
 

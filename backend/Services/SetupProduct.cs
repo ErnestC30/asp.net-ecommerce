@@ -1,10 +1,9 @@
-using backend.Models.CategoryDto;
+namespace backend.Setup;
 
-namespace backend.Models.ProductDto;
-
-public class CreateProductDto
+public class SetupProduct
 {
     public required string Name { get; set; }
+    public Guid Uuid { get; set; }
     public string? Description { get; set; }
     public decimal Price { get; set; }
     public decimal? DiscountPrice { get; set; }

@@ -1,14 +1,24 @@
+using System;
+
+using Newtonsoft.Json;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 
+using backend.Models.CategoryDto;
+using backend.Models.ProductDto;
+using backend.Setup;
 using backend.Helpers;
 
 namespace backend.Models
 {
+
     public class ApiDbContext : IdentityDbContext<AppUser>
     {
-        public ApiDbContext(DbContextOptions<ApiDbContext> options) : base(options)
-        { }
+        private readonly IConfiguration _config;
+        public ApiDbContext(DbContextOptions<ApiDbContext> options, IConfiguration config) : base(options)
+        {
+            _config = config;
+        }
 
         public DbSet<Product> Products { get; set; }
         public DbSet<ProductImage> ProductImages { get; set; }
@@ -29,6 +39,8 @@ namespace backend.Models
             .WithOne(e => e.Product)
             .HasForeignKey(e => e.ProductId)
             .HasPrincipalKey(e => e.Id);
+
+            SeedCategoryAndProducts(builder);
         }
 
         public override int SaveChanges()
@@ -79,6 +91,41 @@ namespace backend.Models
                 var product = entry.Entity;
                 product.Slug = SlugHelper.GenerateSlug(product.Name);
             }
+        }
+
+        private void SeedCategoryAndProducts(ModelBuilder builder)
+        {
+            var setupBasePath = _config["SetupData:BasePath"] ?? "";
+
+            string categoriesJson = File.ReadAllText(Path.Combine(setupBasePath, "categories.json"));
+            List<CreateCategoryDto> categoryDtos = JsonConvert.DeserializeObject<List<CreateCategoryDto>>(categoriesJson) ?? new List<CreateCategoryDto>(); ;
+            var categories = categoryDtos.Select((c, idx) => new Category
+            {
+                Id = idx + 1,
+                Slug = SlugHelper.GenerateSlug(c.Name),
+                Name = c.Name,
+                Description = c.Description
+            });
+            builder.Entity<Category>().HasData(categories);
+
+
+            string productsJson = File.ReadAllText(Path.Combine(setupBasePath, "products.json"));
+            List<SetupProduct> productDtos = JsonConvert.DeserializeObject<List<SetupProduct>>(productsJson) ?? new List<SetupProduct>();
+
+            var products = productDtos.Select((p, idx) => new Product
+            {
+                Id = idx + 1,
+                Uuid = p.Uuid,
+                Name = p.Name,
+                Description = p.Description,
+                Price = p.Price,
+                DiscountPrice = p.DiscountPrice,
+                Quantity = p.Quantity,
+                IsActive = p.IsActive,
+                CategoryId = p.CategoryId
+            });
+            builder.Entity<Product>().HasData(products);
+
         }
     }
 }

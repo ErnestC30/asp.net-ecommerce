@@ -25,11 +25,15 @@ public class ProductService : IProductService
     {
         var category = await _context.Categories.FindAsync(createProductDto.CategoryId);
 
+        if (category == null)
+        {
+            throw new KeyNotFoundException($"Category with ID {createProductDto.CategoryId} was not found.");
+        }
+
         var product = new Product
         {
             Uuid = Guid.NewGuid(),
             Name = createProductDto.Name,
-            // Slug = SlugHelper.GenerateSlug(createProductDto.Name)
             Description = createProductDto.Description,
             Price = createProductDto.Price,
             DiscountPrice = createProductDto.DiscountPrice,
