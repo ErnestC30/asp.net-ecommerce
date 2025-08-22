@@ -7,6 +7,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
 using backend.Interfaces;
+using backend.Helpers;
 using backend.Services;
 using backend.Models;
 using backend.Models.ProductDto;
@@ -28,11 +29,30 @@ namespace backend.Controllers
 
         // GET: api/Products
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<ProductDetailDto>>> GetProducts()
+        public async Task<ActionResult<PaginatedItem<ProductDetailDto>>> GetProducts([FromQuery] ProductQueryObject query)
         {
-            var products = await _context.Products.Select(p => _productService.ProductToProductDetailDto(p)).ToListAsync();
 
-            return products;
+            var pageNumber = query.PageNumber;
+            var pageSize = query.PageSize;
+            var categoryId = query.CategoryId;
+
+            var productsQuery = (IQueryable<Product>)_context.Products.Include(p => p.Category);
+
+            if (categoryId != null)
+            {
+                productsQuery = productsQuery.Where(p => p.CategoryId != null && p.CategoryId == categoryId);
+            }
+
+            var totalItems = await productsQuery.LongCountAsync();
+
+            var products = await productsQuery
+                                .OrderBy(p => p.Id)
+                                .Skip(pageNumber * pageSize)
+                                .Take(pageSize)
+                                .Select(p => _productService.ProductToProductDetailDto(p))
+                                .ToListAsync();
+
+            return Ok(new PaginatedItem<ProductDetailDto>(pageNumber, pageSize, totalItems, products));
         }
 
         // GET: api/Products/5
