@@ -1,6 +1,7 @@
 using System;
 
 using Newtonsoft.Json;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 
@@ -23,6 +24,7 @@ namespace backend.Models
         public DbSet<Product> Products { get; set; }
         public DbSet<ProductImage> ProductImages { get; set; }
         public DbSet<Category> Categories { get; set; }
+        public DbSet<RefreshToken> RefreshTokens { get; set; }
 
         protected override void OnModelCreating(ModelBuilder builder)
         {
@@ -39,6 +41,28 @@ namespace backend.Models
             .WithOne(e => e.Product)
             .HasForeignKey(e => e.ProductId)
             .HasPrincipalKey(e => e.Id);
+
+            builder.Entity<RefreshToken>()
+            .HasOne(e => e.User)
+            .WithMany(u => u.RefreshTokens)
+            .HasForeignKey(e => e.UserId);
+
+            List<IdentityRole> roles = new List<IdentityRole>
+        {
+            new IdentityRole
+            {
+                Id = "68b87a0e-9047-4e42-975d-98943d0cd843",
+                Name = "Admin",
+                NormalizedName = "ADMIN"
+            },
+            new IdentityRole
+            {
+                Id = "75971a93-05e1-410c-b3e8-5baa976403e5",
+                Name = "User",
+                NormalizedName = "USER"
+            },
+        };
+            builder.Entity<IdentityRole>().HasData(roles);
 
             SeedCategoryAndProducts(builder);
         }
