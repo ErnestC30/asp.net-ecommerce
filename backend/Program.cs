@@ -64,6 +64,7 @@ builder.Services.AddAuthentication(options =>
 
 // Add services to the container.
 builder.AddApplicationServices();
+builder.AddBackgroundServices();
 
 builder.Services.AddControllers().AddNewtonsoftJson(options =>
 {

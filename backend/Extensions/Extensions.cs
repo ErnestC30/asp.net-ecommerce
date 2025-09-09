@@ -1,9 +1,9 @@
 using Microsoft.EntityFrameworkCore;
 
 
-using backend.Services;
 using backend.Interfaces;
 using backend.Models;
+using backend.Services;
 
 namespace backend.Extensions;
 
@@ -19,5 +19,10 @@ public static class Extensions
         builder.Services.AddScoped<ICategoryService, CategoryService>();
         builder.Services.AddScoped<IProductService, ProductService>();
         builder.Services.AddScoped<ITokenService, TokenService>();
+    }
+
+    public static void AddBackgroundServices(this IHostApplicationBuilder builder)
+    {
+        builder.Services.AddHostedService<RemoveUnverifiedUsersService>();
     }
 }
