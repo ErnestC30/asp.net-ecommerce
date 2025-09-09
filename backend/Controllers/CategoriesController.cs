@@ -52,6 +52,7 @@ namespace backend.Controllers
         // PUT: api/Categories/5
         // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
         [HttpPut("{id}")]
+        [Authorize(Roles = "Admin")]
         public async Task<IActionResult> PutCategory(long id, [FromBody] CategoryUpdateDto dto)
         {
             var category = await _context.Categories.FindAsync(id);
@@ -76,6 +77,8 @@ namespace backend.Controllers
         // POST: api/Categories
         // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
         [HttpPost]
+        [Authorize(Roles = "Admin")]
+
         public async Task<ActionResult<Category>> PostCategory([FromBody] CreateCategoryDto dto)
         {
 
@@ -93,6 +96,7 @@ namespace backend.Controllers
 
         // DELETE: api/Categories/5
         [HttpDelete("{id}")]
+        [Authorize(Roles = "Admin")]
         public async Task<IActionResult> DeleteCategory(long id)
         {
             var category = await _context.Categories.FindAsync(id);

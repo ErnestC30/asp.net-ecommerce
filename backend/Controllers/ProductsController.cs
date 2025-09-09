@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.AspNetCore.Authorization;
 
 using backend.Interfaces;
 using backend.Helpers;
@@ -73,6 +74,7 @@ namespace backend.Controllers
         // PUT: api/Products/5
         // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
         [HttpPut("{id}")]
+        [Authorize(Roles = "Admin")]
         public async Task<IActionResult> PutProduct(long id, Product product)
         {
             if (id != product.Id)
@@ -104,6 +106,7 @@ namespace backend.Controllers
         // POST: api/Products
         // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
         [HttpPost]
+        [Authorize(Roles = "Admin")]
         public async Task<ActionResult<Product>> PostProduct([FromBody] CreateProductDto createProductDto)
         {
             var product = await _productService.CreateProduct(createProductDto);
@@ -113,6 +116,7 @@ namespace backend.Controllers
 
         // DELETE: api/Products/5
         [HttpDelete("{id}")]
+        [Authorize(Roles = "Admin")]
         public async Task<IActionResult> DeleteProduct(long id)
         {
             var product = await _context.Products.FindAsync(id);
