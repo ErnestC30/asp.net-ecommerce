@@ -1,12 +1,4 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Identity;
-
 
 using backend.Interfaces;
 using backend.Services;
@@ -117,5 +109,20 @@ namespace backend.Controllers
         // {
 
         // }
+
+        [HttpDelete("{id}")]
+        [Authorize(Roles = "Admin")]
+        public async Task<IActionResult> DeleteUser(string id)
+        {
+            var userForDelete = await _userManager.Users.FirstOrDefaultAsync(x => x.Id == id);
+
+            if (userForDelete == null)
+            {
+                return BadRequest();
+            }
+
+            await _userManager.DeleteAsync(userForDelete);
+            return Ok();
+        }
     }
 }
