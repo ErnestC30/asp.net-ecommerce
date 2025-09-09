@@ -1,16 +1,20 @@
+using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.Hosting;
+
+using backend.Models;
 
 namespace backend.Services;
 
 public class RemoveUnverifiedUsersService : BackgroundService
 {
-
+    private readonly IServiceScopeFactory _scopeFactory;
     private readonly ILogger<RemoveUnverifiedUsersService> _logger;
-    private readonly TimeSpan _interval = TimeSpan.FromMinutes(1);
     private string _taskName = "RemoveUnverifiedUsersService";
+    private readonly TimeSpan _interval = TimeSpan.FromMinutes(20);
 
-    public RemoveUnverifiedUsersService(ILogger<RemoveUnverifiedUsersService> logger)
+    public RemoveUnverifiedUsersService(IServiceScopeFactory scopeFactory, ILogger<RemoveUnverifiedUsersService> logger)
     {
+        _scopeFactory = scopeFactory;
         _logger = logger;
     }
 
@@ -41,6 +45,19 @@ public class RemoveUnverifiedUsersService : BackgroundService
 
     private async Task DeleteUnverifiedUsers()
     {
-        _logger.LogInformation("Deleting Users...");
+        using var scope = _scopeFactory.CreateScope();
+        var userManager = scope.ServiceProvider.GetRequiredService<UserManager<AppUser>>();
+        var currentTime = DateTime.UtcNow;
+        var timeBeforeAccountIsAbandoned = currentTime - TimeSpan.FromDays(14);
+        var usersForDelete = await userManager.Users.Where(u => !u.EmailConfirmed && u.RegistrationDate < timeBeforeAccountIsAbandoned).ToListAsync();
+        foreach (var user in usersForDelete)
+        {
+            _logger.LogInformation($"Deleting User with Id: {user.Id}");
+            var result = await userManager.DeleteAsync(user);
+            if (!result.Succeeded)
+            {
+                _logger.LogWarning($"Failed to delete user {user.Id}: {string.Join(", ", result.Errors.Select(e => e.Description))}");
+            }
+        }
     }
 }
