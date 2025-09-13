@@ -66,6 +66,9 @@ builder.Services.AddAuthentication(options =>
 builder.AddApplicationServices();
 builder.AddBackgroundServices();
 
+builder.Services.AddHttpContextAccessor();
+
+
 builder.Services.AddControllers().AddNewtonsoftJson(options =>
 {
     options.SerializerSettings.ReferenceLoopHandling = Newtonsoft.Json.ReferenceLoopHandling.Ignore;

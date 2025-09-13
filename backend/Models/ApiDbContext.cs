@@ -25,6 +25,8 @@ namespace backend.Models
         public DbSet<ProductImage> ProductImages { get; set; }
         public DbSet<Category> Categories { get; set; }
         public DbSet<RefreshToken> RefreshTokens { get; set; }
+        public DbSet<Cart> Carts { get; set; }
+        public DbSet<CartItem> CartItems { get; set; }
 
         protected override void OnModelCreating(ModelBuilder builder)
         {
@@ -46,6 +48,23 @@ namespace backend.Models
             .HasOne(e => e.User)
             .WithMany(u => u.RefreshTokens)
             .HasForeignKey(e => e.UserId);
+
+            builder.Entity<Cart>()
+            .HasMany(e => e.Items)
+            .WithOne(e => e.Cart)
+            .HasForeignKey(e => e.CartId)
+            .HasPrincipalKey(e => e.Id);
+
+            builder.Entity<Cart>()
+            .HasOne(c => c.AppUser)
+            .WithOne(u => u.Cart)
+            .HasForeignKey<Cart>(c => c.UserId)
+            .IsRequired(false);
+
+            builder.Entity<CartItem>()
+            .HasOne(e => e.Product)
+            .WithMany()
+            .HasForeignKey(e => e.ProductId);
 
             List<IdentityRole> roles = new List<IdentityRole>
         {

@@ -10,6 +10,6 @@ namespace backend.Interfaces;
 
 public interface IProductService
 {
-    Task<Product> CreateProduct(CreateProductDto createProductDto);
-    ProductDetailDto ProductToProductDetailDto(Product product);
+    public Task<Product> CreateProduct(CreateProductDto createProductDto);
+    public ProductDetailDto ProductToProductDetailDto(Product product);
 }
