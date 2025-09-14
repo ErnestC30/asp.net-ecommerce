@@ -1,0 +1,19 @@
+[
+  {
+    "Name": "CPUs",
+    "Description": "Computer processing units"
+  },
+  {
+    "Name": "Motherboards"
+  },
+  {
+    "Name": "GPUs"
+  },
+  {
+    "Name": "RAM",
+    "Description": "Random access memory"
+  },
+  {
+    "Name": "Monitors"
+  }
+]
