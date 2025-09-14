@@ -83,7 +83,10 @@ namespace backend.Models
         };
             builder.Entity<IdentityRole>().HasData(roles);
 
-            SeedCategoryAndProducts(builder);
+            if (_config.GetValue<bool>("SetupData:UseSeeding"))
+            {
+                SeedCategoryAndProducts(builder);
+            }
         }
 
         public override int SaveChanges()
