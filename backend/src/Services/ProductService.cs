@@ -21,7 +21,7 @@ public class ProductService : IProductService
         _categoryService = categoryService;
     }
 
-    public async Task<Product> GetProductById(long id)
+    public async Task<Product?> GetProductById(long id)
     {
         var product = await _context.Products.FindAsync(id);
         return product;
