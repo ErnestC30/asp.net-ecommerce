@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Identity;
 using backend.Extensions;
 using backend.Interfaces;
 using backend.Models;
+using backend.Models.CartDto;
 
 namespace backend.Services;
 
@@ -19,7 +20,11 @@ public class CartService : ICartService
     }
     public async Task<Cart> GetCartByUserId(string userId)
     {
-        var cart = await _context.Carts.FirstOrDefaultAsync(c => c.UserId == userId);
+        var cart = await _context.Carts
+                            .Include(c => c.Items)
+                            .ThenInclude(ci => ci.Product)
+                            .FirstOrDefaultAsync(c => c.UserId == userId);
+
         if (cart == null) cart = await CreateCart(userId);
         return cart;
     }
@@ -111,5 +116,28 @@ public class CartService : ICartService
         }
 
         await _context.SaveChangesAsync();
+    }
+
+    public CartDisplayDto CartToCartDisplayDto(Cart cart)
+    {
+        return new CartDisplayDto
+        {
+            Items = cart.Items.Select(CartItemToCartItemDisplayDto).ToList()
+        };
+    }
+
+    public CartItemDisplayDto CartItemToCartItemDisplayDto(CartItem cartItem)
+    {
+        return new CartItemDisplayDto
+        {
+            Quantity = cartItem.Quantity,
+            Product = new CartProductDto
+            {
+                Uuid = cartItem.Product.Uuid,
+                Name = cartItem.Product.Name,
+                Price = cartItem.Product.Price,
+                DiscountPrice = cartItem.Product.DiscountPrice,
+            }
+        };
     }
 }

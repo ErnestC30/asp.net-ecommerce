@@ -4,6 +4,7 @@ using backend.Extensions;
 using backend.Interfaces;
 using backend.Services;
 using backend.Models;
+using backend.Models.CartDto;
 
 namespace backend.Controllers
 {
@@ -26,15 +27,15 @@ namespace backend.Controllers
 
         [HttpGet]
         [Authorize]
-        public async Task<IActionResult> GetCart()
+        public async Task<ActionResult<CartDisplayDto>> GetCart()
         {
             var userClaims = _httpContextAccessor.HttpContext!.User;
             var userId = userClaims.GetUserId();
 
             var cart = await _cartService.GetCartByUserId(userId);
+            var cartDto = _cartService.CartToCartDisplayDto(cart);
 
-            // return cart dto
-            return Ok();
+            return Ok(cartDto);
 
         }
 
