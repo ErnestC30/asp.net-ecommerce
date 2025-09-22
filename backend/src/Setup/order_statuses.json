@@ -1,0 +1,26 @@
+[
+  {
+    "Name": "Pending",
+    "Slug": "pending"
+  },
+  {
+    "Name": "Paid",
+    "Slug": "paid"
+  },
+  {
+    "Name": "Processing",
+    "Slug": "processing"
+  },
+  {
+    "Name": "Shipped",
+    "Slug": "shipped"
+  },
+  {
+    "Name": "Completed",
+    "Slug": "completed"
+  },
+  {
+    "Name": "Cancelled",
+    "Slug": "cancelled"
+  }
+]
