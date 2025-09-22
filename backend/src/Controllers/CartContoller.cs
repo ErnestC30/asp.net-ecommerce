@@ -13,14 +13,12 @@ namespace backend.Controllers
     public class CartController : ControllerBase
     {
         private readonly UserManager<AppUser> _userManager;
-        private readonly ApiDbContext _context;
         private readonly IHttpContextAccessor _httpContextAccessor;
         private readonly ICartService _cartService;
 
         public CartController(UserManager<AppUser> userManager, ApiDbContext context, IHttpContextAccessor httpContextAccessor, ICartService cartService)
         {
             _userManager = userManager;
-            _context = context;
             _httpContextAccessor = httpContextAccessor;
             _cartService = cartService;
         }
@@ -29,8 +27,7 @@ namespace backend.Controllers
         [Authorize]
         public async Task<ActionResult<CartDisplayDto>> GetCart()
         {
-            var userClaims = _httpContextAccessor.HttpContext!.User;
-            var userId = userClaims.GetUserId();
+            var userId = User.GetUserId();
 
             var cart = await _cartService.GetCartByUserId(userId);
             var cartDto = _cartService.CartToCartDisplayDto(cart);
@@ -45,8 +42,7 @@ namespace backend.Controllers
         {
             if (!ModelState.IsValid) return BadRequest(ModelState);
 
-            var userClaims = _httpContextAccessor.HttpContext!.User;
-            var userId = userClaims.GetUserId();
+            var userId = User.GetUserId();
 
             try
             {
@@ -56,7 +52,7 @@ namespace backend.Controllers
             {
                 return BadRequest(e);
             }
-            return Ok();
+            return NoContent();
 
         }
 
@@ -66,8 +62,7 @@ namespace backend.Controllers
         {
             if (!ModelState.IsValid) return BadRequest(ModelState);
 
-            var userClaims = _httpContextAccessor.HttpContext!.User;
-            var userId = userClaims.GetUserId();
+            var userId = User.GetUserId();
             try
             {
                 await _cartService.SubtractItemFromCart(userId, dto.ProductUuid, dto.Quantity);
@@ -76,7 +71,7 @@ namespace backend.Controllers
             {
                 return BadRequest(e);
             }
-            return Ok();
+            return NoContent();
         }
 
         // public Task<IActionResult> UpdateCart()

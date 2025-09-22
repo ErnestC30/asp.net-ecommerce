@@ -15,4 +15,5 @@ public class ProductDetailDto
     public bool IsActive { get; set; }
 
     public CategoryInfoDto? Category { get; set; }
+    public List<ProductImageDto> Images { get; set; } = new List<ProductImageDto>();
 }

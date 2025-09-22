@@ -3,6 +3,7 @@ using backend.Helpers;
 using backend.Services;
 using backend.Models;
 using backend.Models.ProductDto;
+using backend.Exceptions;
 
 namespace backend.Controllers
 {
@@ -10,12 +11,10 @@ namespace backend.Controllers
     [ApiController]
     public class ProductsController : ControllerBase
     {
-        private readonly ApiDbContext _context;
         private readonly IProductService _productService;
 
         public ProductsController(ApiDbContext context, IProductService productService)
         {
-            _context = context;
             _productService = productService;
         }
 
@@ -23,28 +22,8 @@ namespace backend.Controllers
         [HttpGet]
         public async Task<ActionResult<PaginatedItem<ProductDetailDto>>> GetProducts([FromQuery] ProductQueryObject query)
         {
-
-            var pageNumber = query.PageNumber;
-            var pageSize = query.PageSize;
-            var categoryId = query.CategoryId;
-
-            var productsQuery = (IQueryable<Product>)_context.Products.Include(p => p.Category);
-
-            if (categoryId != null)
-            {
-                productsQuery = productsQuery.Where(p => p.CategoryId != null && p.CategoryId == categoryId);
-            }
-
-            var totalItems = await productsQuery.LongCountAsync();
-
-            var products = await productsQuery
-                                .OrderBy(p => p.Id)
-                                .Skip(pageNumber * pageSize)
-                                .Take(pageSize)
-                                .Select(p => _productService.ProductToProductDetailDto(p))
-                                .ToListAsync();
-
-            return Ok(new PaginatedItem<ProductDetailDto>(pageNumber, pageSize, totalItems, products));
+            var paginatedProducts = await _productService.GetFilteredProducts(query);
+            return Ok(paginatedProducts);
         }
 
         // GET: api/Products/5
@@ -66,31 +45,13 @@ namespace backend.Controllers
         // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
         [HttpPut("{id}")]
         [Authorize(Roles = "Admin")]
-        public async Task<IActionResult> PutProduct(long id, Product product)
+        // public async Task<IActionResult> PutProduct(long id, Product product)
+        public async Task<IActionResult> PutProduct(long id, [FromBody] ProductModificationDto modifyProductDto)
         {
-            if (id != product.Id)
-            {
-                return BadRequest();
-            }
 
-            _context.Entry(product).State = EntityState.Modified;
+            var success = await _productService.ModifyProduct(id, modifyProductDto);
 
-            try
-            {
-                await _context.SaveChangesAsync();
-            }
-            catch (DbUpdateConcurrencyException)
-            {
-                if (!ProductExists(id))
-                {
-                    return NotFound();
-                }
-                else
-                {
-                    throw;
-                }
-            }
-
+            if (!success) return BadRequest();
             return NoContent();
         }
 
@@ -105,26 +66,55 @@ namespace backend.Controllers
             return CreatedAtAction("GetProduct", new { id = product.Id }, product);
         }
 
+        [HttpPost("{id}/images")]
+        [Authorize(Roles = "Admin")]
+        public async Task<IActionResult> AddProductImage(long id, [FromForm] ProductImageCreateDto productImageCreateDto)
+        {
+
+            if (!ModelState.IsValid) return BadRequest();
+
+            try
+            {
+                await _productService.AddProductImage(id, productImageCreateDto.File, productImageCreateDto.Order);
+            }
+            catch (UnsupportedFileTypeException ex)
+            {
+                return BadRequest(ex.Message);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(ex.Message);
+            }
+
+            return Ok();
+        }
+
+        [HttpDelete("images")]
+        [Authorize(Roles = "Admin")]
+        public async Task<IActionResult> RemoveProductImage(long productImageId)
+        {
+            try
+            {
+                await _productService.RemoveProductImage(productImageId);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(ex.Message);
+            }
+
+            return Ok();
+        }
+
         // DELETE: api/Products/5
         [HttpDelete("{id}")]
         [Authorize(Roles = "Admin")]
         public async Task<IActionResult> DeleteProduct(long id)
         {
-            var product = await _context.Products.FindAsync(id);
-            if (product == null)
-            {
-                return NotFound();
-            }
+            var deleted = await _productService.DeleteProduct(id);
 
-            _context.Products.Remove(product);
-            await _context.SaveChangesAsync();
+            if (!deleted) return BadRequest();
 
             return NoContent();
-        }
-
-        private bool ProductExists(long id)
-        {
-            return _context.Products.Any(e => e.Id == id);
         }
     }
 }
