@@ -28,6 +28,9 @@ namespace backend.Models
         public DbSet<RefreshToken> RefreshTokens { get; set; }
         public DbSet<Cart> Carts { get; set; }
         public DbSet<CartItem> CartItems { get; set; }
+        public DbSet<Order> Orders { get; set; }
+        public DbSet<OrderLineItem> OrderLineItems { get; set; }
+        public DbSet<OrderStatus> OrderStatuses { get; set; }
 
         protected override void OnModelCreating(ModelBuilder builder)
         {
@@ -197,7 +200,7 @@ namespace backend.Models
             var setupBasePath = _config["SetupData:BasePath"] ?? "";
 
             string orderStatusesJson = File.ReadAllText(Path.Combine(setupBasePath, "order_statuses.json"));
-            List<CreateOrderStatusDto> orderStatusDtos = JsonConvert.DeserializeObject<List<CreateOrderStatusDto>>(orderStatusesJson) ?? new List<CreateOrderStatusDto>(); ;
+            List<OrderStatusCreateDto> orderStatusDtos = JsonConvert.DeserializeObject<List<OrderStatusCreateDto>>(orderStatusesJson) ?? new List<OrderStatusCreateDto>(); ;
 
             var orderStatuses = orderStatusDtos.Select((os, idx) => new OrderStatus
             {

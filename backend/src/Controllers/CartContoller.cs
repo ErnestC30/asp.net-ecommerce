@@ -29,6 +29,8 @@ namespace backend.Controllers
         {
             var userId = User.GetUserId();
 
+            if (userId == null) return BadRequest();
+
             var cart = await _cartService.GetCartByUserId(userId);
             var cartDto = _cartService.CartToCartDisplayDto(cart);
 
@@ -43,6 +45,8 @@ namespace backend.Controllers
             if (!ModelState.IsValid) return BadRequest(ModelState);
 
             var userId = User.GetUserId();
+
+            if (userId == null) return BadRequest();
 
             try
             {
@@ -63,6 +67,9 @@ namespace backend.Controllers
             if (!ModelState.IsValid) return BadRequest(ModelState);
 
             var userId = User.GetUserId();
+
+            if (userId == null) return BadRequest();
+
             try
             {
                 await _cartService.SubtractItemFromCart(userId, dto.ProductUuid, dto.Quantity);

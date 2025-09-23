@@ -9,5 +9,6 @@ public class OrderLineItem
     public required string Name { get; set; }
     public required Decimal Price { get; set; }
     public Decimal? DiscountPrice { get; set; }
+    [Range(1, 99)]
     public required int Quantity { get; set; }
 }

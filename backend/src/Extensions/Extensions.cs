@@ -24,6 +24,7 @@ public static class Extensions
         builder.Services.AddScoped<IProductImageService, LocalProductImageService>();
         builder.Services.AddScoped<ITokenService, TokenService>();
         builder.Services.AddScoped<ICartService, CartService>();
+        builder.Services.AddScoped<IOrderService, OrderService>();
     }
 
     public static void AddBackgroundServices(this IHostApplicationBuilder builder)
