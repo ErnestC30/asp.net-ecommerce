@@ -31,6 +31,7 @@ namespace backend.Models
         public DbSet<Order> Orders { get; set; }
         public DbSet<OrderLineItem> OrderLineItems { get; set; }
         public DbSet<OrderStatus> OrderStatuses { get; set; }
+        public DbSet<UserAddress> UserAddresses { get; set; }
 
         protected override void OnModelCreating(ModelBuilder builder)
         {
@@ -85,6 +86,11 @@ namespace backend.Models
                 .HasOne(o => o.OrderStatus)
                 .WithMany(os => os.Orders)
                 .HasForeignKey(o => o.OrderStatusId);
+
+            builder.Entity<UserAddress>()
+                .HasOne(ua => ua.User)
+                .WithMany(u => u.Addresses)
+                .HasForeignKey(ua => ua.UserId);
 
             List<IdentityRole> roles = new List<IdentityRole>
         {
