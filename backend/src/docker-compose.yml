@@ -1,0 +1,11 @@
+services:
+  api:
+    build:
+      dockerfile: Dockerfile
+    ports:
+      - "8080:8080"
+    env_file:
+      - .env
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - DB_CONNECTION_STRING=Host=host.docker.internal; Username=postgres; Password=ernest30; Port=5432; Database=ecommerce

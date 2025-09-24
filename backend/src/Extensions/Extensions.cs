@@ -15,7 +15,7 @@ public static class Extensions
     public static void AddApplicationServices(this IHostApplicationBuilder builder)
     {
 
-        string connectionString = builder.Configuration.GetConnectionString("DefaultConnection") ?? throw new Exception("DB_CONNECTION_STRING is not set.");
+        string connectionString = builder.Configuration.GetConnectionString("DefaultConnection") ?? throw new Exception("Database connection string is not set.");
 
         builder.Services.AddDbContext<ApiDbContext>(opt => opt.UseNpgsql(connectionString).UseSnakeCaseNamingConvention());
 
