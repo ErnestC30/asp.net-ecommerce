@@ -3,6 +3,8 @@ using Microsoft.AspNetCore.Identity;
 using backend.Interfaces;
 using backend.Services;
 using backend.Models;
+using backend.Models.AccountDto;
+using backend.Extensions;
 
 namespace backend.Controllers
 {
@@ -14,14 +16,16 @@ namespace backend.Controllers
         private readonly ApiDbContext _context;
         private readonly SignInManager<AppUser> _signinManager;
         private readonly ITokenService _tokenService;
+        private readonly IAddressService _addressService;
 
 
-        public AccountsController(UserManager<AppUser> userManager, ApiDbContext context, SignInManager<AppUser> signInManager, ITokenService tokenService)
+        public AccountsController(UserManager<AppUser> userManager, ApiDbContext context, SignInManager<AppUser> signInManager, ITokenService tokenService, IAddressService addressService)
         {
             _userManager = userManager;
             _context = context;
             _signinManager = signInManager;
             _tokenService = tokenService;
+            _addressService = addressService;
         }
 
         [HttpPost("login")]
@@ -123,6 +127,76 @@ namespace backend.Controllers
 
             await _userManager.DeleteAsync(userForDelete);
             return Ok();
+        }
+
+        [HttpPost("addresses")]
+        [Authorize]
+        public async Task<IActionResult> CreateUserAddress([FromBody] UserAddressCreateDto createDto)
+        {
+            var userId = User.GetUserId();
+            if (userId == null) return BadRequest();
+
+            try
+            {
+                await _addressService.CreateUserAddress(createDto, userId);
+                return NoContent();
+            }
+            catch
+            {
+                return BadRequest();
+            }
+
+        }
+
+        [HttpGet("addresses")]
+        [Authorize]
+        public async Task<IActionResult> GetUserAddresses()
+        {
+            var userId = User.GetUserId();
+            if (userId == null) return BadRequest();
+
+            try
+            {
+                var addressesDto = await _addressService.GetUserAddresses(userId);
+                return Ok(addressesDto);
+            }
+            catch
+            {
+                return BadRequest();
+            }
+        }
+
+        [HttpPut("addresses/{addressGuid}")]
+        [Authorize]
+        public async Task<IActionResult> EditUserAddress([FromBody] UserAddressEditDto editDto, string addressGuid)
+        {
+            var userId = User.GetUserId();
+            if (userId == null) return BadRequest();
+
+            try
+            {
+                await _addressService.EditUserAddress(editDto, addressGuid, userId);
+                return NoContent();
+            }
+            catch
+            {
+                return BadRequest();
+            }
+        }
+
+        [HttpDelete("addresses/{addressGuid}")]
+        [Authorize]
+        public async Task<IActionResult> DeleteUserAddress(string addressGuid)
+        {
+            try
+            {
+                await _addressService.DeleteUserAddress(addressGuid);
+                return NoContent();
+            }
+            catch
+            {
+                return BadRequest();
+            }
         }
     }
 }

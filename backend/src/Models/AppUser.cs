@@ -8,4 +8,5 @@ public class AppUser : IdentityUser
     public ICollection<RefreshToken> RefreshTokens { get; set; } = new List<RefreshToken>();
     public Cart? Cart { get; set; }
     public ICollection<Order> Orders { get; set;} = new List<Order>();
+    public ICollection<UserAddress> Addresses { get; set; } = new List<UserAddress>();
 }
