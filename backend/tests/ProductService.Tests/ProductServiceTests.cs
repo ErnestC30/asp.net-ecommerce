@@ -1,21 +1,33 @@
-using Xunit;
-using NSubstitute;
-using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Configuration;
-
+using backend.Exceptions;
+using backend.Helpers;
 using backend.Interfaces;
 using backend.Models;
-using backend.Models.ProductDto;
 using backend.Models.CategoryDto;
+using backend.Models.ProductDto;
 using backend.Services;
+using Microsoft.AspNetCore.Http;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Logging;
+using NSubstitute;
+using System.Text;
+using Xunit;
 
 namespace backend.ProductServiceTests.UnitTests;
+
+/*
+ Need to be careful testing the methods using 'ProductToProductDetailDto' since it relies on functioning ICategoryService
+ => requires mocking the return for CategoryService to get the correct Category data
+ */
+
 
 public class ProductServiceTests
 {
 
     private ApiDbContext _context;
     private ICategoryService _categoryService;
+    private IProductImageService _productImageService;
+    private ILogger<ProductService> _logger;
     private IProductService _productService;
     private static long _exampleId = 1;
 
@@ -23,7 +35,9 @@ public class ProductServiceTests
     {
         _context = GetDbContext();
         _categoryService = Substitute.For<ICategoryService>();
-        _productService = new ProductService(_context, _categoryService);
+        _productImageService = Substitute.For<IProductImageService>();
+        _logger = Substitute.For<ILogger<ProductService>>();
+        _productService = new ProductService(_context, _categoryService, _productImageService, _logger);
     }
 
     public static ApiDbContext GetDbContext(bool useSeeding = false)
@@ -38,7 +52,9 @@ public class ProductServiceTests
             .Build();
         var dbContext = new ApiDbContext(options, config);
 
-        dbContext.Categories.Add(new Category { Id = 1, Name = "Category", Slug = "category" });
+        dbContext.Categories.Add(new Category { Id = 1, Name = "Category 1", Slug = "category" });
+        dbContext.Categories.Add(new Category { Id = 2, Name = "Category 2", Slug = "category_2" });
+
         dbContext.Products.Add(new Product
         {
             Id = _exampleId,
@@ -48,10 +64,34 @@ public class ProductServiceTests
             Quantity = 2,
             IsActive = true,
             CategoryId = 1
+
         });
+        dbContext.Products.Add(new Product
+        {
+            Id = _exampleId + 1,
+            Uuid = new Guid("3c3a7883-3a13-4226-a0de-61222f1093ad"),
+            Name = "Sample Product 2",
+            Price = 20.00M,
+            Quantity = 2,
+            IsActive = true,
+            CategoryId = 2
+        });
+
         dbContext.SaveChanges();
 
         return dbContext;
+    }
+
+    private IFormFile CreateFormFile(string fileName, string contentType)
+    {
+        var content = "Some content";
+        var stream = new MemoryStream(Encoding.UTF8.GetBytes(content));
+
+        return new FormFile(stream, 0, stream.Length, "file", fileName)
+        {
+            Headers = new HeaderDictionary(),
+            ContentType = contentType
+        };
     }
 
     [Fact]
@@ -78,6 +118,51 @@ public class ProductServiceTests
 
         // Assert
         Assert.Null(product);
+    }
+
+    [Fact]
+    public async Task GetFilteredProducts_ShouldReturnCategory1_WhenFilteringCategory1()
+    {
+        // Arrange
+        var query = new ProductQueryObject
+        {
+            CategoryId = 1
+        };
+
+        // Act
+        var paginatedProducts = await _productService.GetFilteredProducts(query);
+        _categoryService.CategoryToCategoryInfoDto(Arg.Any<Category>()).Returns(new CategoryInfoDto
+        {
+            Name = "Category 1",
+            Slug = "category",
+            Description = "description"
+        });
+
+        // Assert
+        Assert.Equal(1, paginatedProducts.TotalCount);
+        foreach (var product in paginatedProducts.Data)
+        {
+            Assert.NotNull(product.Category);
+            Assert.Equal("Category 1", product.Category.Name);
+        }
+    }
+
+    [Fact]
+    public async Task GetFilteredProducts_ShouldReturnPaginatedProducts_WhenUsingPageNumAndSize()
+    {
+        // Arrange
+        var query = new ProductQueryObject
+        {
+            PageNumber = 1,
+            PageSize = 1
+        };
+
+        // Act
+        var paginatedProducts = await _productService.GetFilteredProducts(query);
+
+        // Assert
+        Assert.Equal(2, paginatedProducts.TotalCount);
+        Assert.Single(paginatedProducts.Data);
     }
 
     [Fact]
@@ -146,6 +231,88 @@ public class ProductServiceTests
     }
 
     [Fact]
+    public async Task AddProductImage_ShouldCreateNewProductImage_WhenValidFormFileAdded()
+    {
+        // Arrange
+        var productId = _exampleId;
+        var imageFile = CreateFormFile("ImageFile.png", "image/png");
+        int order = 0;
+
+        // Act
+        _productImageService.UploadImage(imageFile).Returns("file path");
+        await _productService.AddProductImage(productId, imageFile, order);
+        var product = await _context.Products.FirstOrDefaultAsync(p => p.Id == _exampleId);
+
+        // Assert
+        Assert.NotNull(product);
+        Assert.NotNull(product.Images);
+        Assert.Single(product.Images);
+    }
+
+    [Fact]
+    public async Task AddProductImage_ShouldRaiseUnsupportedFileTypeExtension_WhenInvalidFileType()
+    {
+        // Arrange
+        var productId = _exampleId;
+        var imageFile = CreateFormFile("ImageFile.gif", "image/gif");
+        int order = 0;
+
+        // Act + Assert
+        await Assert.ThrowsAsync<UnsupportedFileTypeException>(() => _productService.AddProductImage(productId, imageFile, order));
+    }
+
+    [Fact]
+    public async Task AddProductImage_ShouldRaiseKeyNotFoundException_WhenInvalidProductId()
+    {
+        // Arrange
+        var productId = 100;
+        var imageFile = CreateFormFile("ImageFile.png", "image/png");
+        int order = 0;
+
+        // Act + Assert
+        await Assert.ThrowsAsync<KeyNotFoundException>(() => _productService.AddProductImage(productId, imageFile, order));
+    }
+
+    [Fact]
+    public async Task RemoveProductImage_ShouldRemoveProductImage_WhenValidImageId()
+    {
+        // Arrange 
+        var product = await _context.Products.FirstOrDefaultAsync(p => p.Id == _exampleId);
+        product!.Images.Add(new ProductImage
+        {
+            Url = "File link",
+            ProductId = _exampleId,
+            Product = product
+        });
+        await _context.SaveChangesAsync();
+        var imageId = product.Images.First().Id;
+
+        // Act 
+        await _productService.RemoveProductImage(imageId);
+
+        // Assert
+        Assert.Empty(product.Images);
+    }
+
+    [Fact]
+    public async Task RemoveProductImage_ShouldRaiseException_WhenInvalidProductImageId()
+    {
+        // Arrange 
+        var product = await _context.Products.FirstOrDefaultAsync(p => p.Id == _exampleId);
+        product!.Images.Add(new ProductImage
+        {
+            Url = "File link",
+            ProductId = _exampleId,
+            Product = product
+        });
+        await _context.SaveChangesAsync();
+        var imageId = product.Images.First().Id;
+
+        // Act + Assert
+        await Assert.ThrowsAsync<KeyNotFoundException>(() => _productService.RemoveProductImage(100));
+    }
+
+    [Fact]
     public async Task DeleteProduct_ShouldDeleteProduct_WhenGivenValidId()
     {
         // Arrange
@@ -171,7 +338,6 @@ public class ProductServiceTests
         // Assert
         Assert.False(success);
     }
-
 
     [Fact]
     public void ProductToProductDetailDto_ShouldConvertProductModelToProductDetailDto()
