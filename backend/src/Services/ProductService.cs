@@ -1,12 +1,12 @@
+using System;
+using Microsoft.CodeAnalysis;
+
 using backend.Exceptions;
 using backend.Helpers;
 using backend.Interfaces;
 using backend.Models;
 using backend.Models.CategoryDto;
 using backend.Models.ProductDto;
-using backend.Services;
-using Microsoft.CodeAnalysis;
-using System;
 
 namespace backend.Services;
 
@@ -38,7 +38,7 @@ public class ProductService : IProductService
         var pageSize = query.PageSize;
         var categoryId = query.CategoryId;
 
-        var productsQuery = (IQueryable<Product>)_context.Products.Include(p => p.Category);
+        var productsQuery = (IQueryable<Product>)_context.Products;
 
         if (categoryId != null)
         {
@@ -48,7 +48,8 @@ public class ProductService : IProductService
         var totalItems = await productsQuery.LongCountAsync();
 
         var products = await productsQuery
-            .Include(p => p.ProductImages)
+            .Include(p => p.Category)
+            .Include(p => p.Images)
             .OrderBy(p => p.Id)
             .Skip(pageNumber * pageSize)
             .Take(pageSize)
@@ -115,17 +116,17 @@ public class ProductService : IProductService
 
         if (!IsValidImageFileType(file)) { throw new UnsupportedFileTypeException("Images must be of the following types: .jpg, .jpeg, .png, .webp"); }
 
-        var product = await _context.Products.Include(p => p.ProductImages).FirstOrDefaultAsync(p => p.Id == productId);
+        var product = await _context.Products.Include(p => p.Images).FirstOrDefaultAsync(p => p.Id == productId);
 
         if (product == null) { throw new KeyNotFoundException($"Product with ID: {productId} could not be found."); }
 
         var filename = Path.GetFileName(file.FileName);
-        bool exists = product.ProductImages.Any(pi => pi.Url == filename);
+        bool exists = product.Images.Any(pi => pi.Url == filename);
         // Do not need to upload image again if file with filename already exists
         if (exists) { return; }
 
         var filePath = await _productImageService.UploadImage(file);
-        product.ProductImages.Add(new ProductImage { Url = filename, Order = order, ProductId = productId, Product = product });
+        product.Images.Add(new ProductImage { Url = filename, Order = order, ProductId = productId, Product = product });
         await _context.SaveChangesAsync();
         _logger.LogInformation($"Image uploaded to {filePath}");
     }
@@ -161,7 +162,7 @@ public class ProductService : IProductService
             categoryDto = _categoryService.CategoryToCategoryInfoDto(product.Category);
         }
 
-        List<ProductImageDto> images = product.ProductImages
+        List<ProductImageDto> images = product.Images
             .Select(img => new ProductImageDto { Url = _productImageService.GetImagePath(img.Url), Order = img.Order })
             .ToList();
 

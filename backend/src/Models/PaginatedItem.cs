@@ -4,6 +4,6 @@ public class PaginatedItem<TEntity>(int pageNumber, int pageSize, long count, IE
 {
     public int PageNumber { get; } = pageNumber;
     public int PageSize { get; } = pageSize;
-    public long Count { get; } = count;
+    public long TotalCount { get; } = count;
     public IEnumerable<TEntity> Data { get; } = data;
 }

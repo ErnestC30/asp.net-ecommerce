@@ -44,7 +44,7 @@ namespace backend.Models
                 .HasPrincipalKey(e => e.Id);
 
             builder.Entity<Product>()
-                .HasMany(e => e.ProductImages)
+                .HasMany(e => e.Images)
                 .WithOne(e => e.Product)
                 .HasForeignKey(e => e.ProductId)
                 .HasPrincipalKey(e => e.Id);
