@@ -36,7 +36,7 @@ namespace backend.Services
             _key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(signingKey));
         }
 
-        public async Task<string> CreateToken(AppUser user)
+        public async Task<string> CreateToken(AppUser user, DateTime expirationTime)
         {
             var claims = new List<Claim>();
 
@@ -57,12 +57,11 @@ namespace backend.Services
             claims.AddRange(userRoles.Select(role => new Claim(ClaimTypes.Role, role)));
 
             var creds = new SigningCredentials(_key, SecurityAlgorithms.HmacSha512Signature);
-            var expirationTime = _config.GetValue<int>("JWT:ExpirationTimeInMinutes");
 
             var tokenDescriptor = new SecurityTokenDescriptor
             {
                 Subject = new ClaimsIdentity(claims),
-                Expires = DateTime.UtcNow.AddMinutes(expirationTime),
+                Expires = expirationTime,
                 SigningCredentials = creds,
                 Issuer = _config["JWT:Issuer"],
                 Audience = _config["JWT:Audience"]

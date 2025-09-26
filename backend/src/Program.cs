@@ -4,7 +4,8 @@ using Microsoft.Extensions.FileProviders;
 var builder = WebApplication.CreateBuilder(args);
 
 builder.ConfigureIdentity();
-builder.ConfigureJwt();
+builder.ConfigureAuthentication();
+builder.ConfigureApplicationCookie();
 builder.AddApplicationServices();
 builder.AddBackgroundServices();
 builder.Services.AddHttpContextAccessor();
