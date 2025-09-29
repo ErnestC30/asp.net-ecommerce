@@ -82,34 +82,5 @@ namespace backend.Services
                 return Convert.ToBase64String(randomNumber);
             }
         }
-
-        public string GenerateAccessTokenFromRefreshToken(string refreshToken)
-        {
-            // WIP
-            // read refreshtoken to grab the user
-            var tokenHandler = new JwtSecurityTokenHandler();
-
-            // var principal = tokenHandler.ValidateToken(refreshToken, new TokenValidationParameters
-            // {
-            //     ValidateIssuerSigningKey = true,
-            //     IssuerSigningKey = new SymmetricSecurityKey(_key),
-            //     ValidateIssuer = false,
-            //     ValidateAudience = false,
-            //     ValidateLifetime = false // Do not check expiration here
-            // }, out SecurityToken validatedToken);
-
-            // var userId = principal.FindFirst(JwtRegisteredClaimNames.Email)?.Value;
-
-            // Console.WriteLine(userId);
-
-            var tokenDescriptor = new SecurityTokenDescriptor
-            {
-
-            };
-
-            var token = tokenHandler.CreateToken(tokenDescriptor);
-            var tokenString = tokenHandler.WriteToken(token);
-            return tokenString;
-        }
     }
 }

@@ -1,10 +1,7 @@
-using Microsoft.AspNetCore.Identity;
-
-using backend.Interfaces;
-using backend.Services;
-using backend.Models;
-using backend.Models.AccountDto;
 using backend.Extensions;
+using backend.Interfaces;
+using backend.Models.AccountDto;
+
 
 namespace backend.Controllers
 {
@@ -14,11 +11,13 @@ namespace backend.Controllers
     {
         private readonly IAddressService _addressService;
         private readonly IAuthService _authService;
+        private readonly IConfiguration _config;
 
-        public AccountsController(IAddressService addressService, IAuthService authService)
+        public AccountsController(IAddressService addressService, IAuthService authService, IConfiguration config)
         {
             _addressService = addressService;
             _authService = authService;
+            _config = config;
         }
 
         [HttpPost("login")]
@@ -32,14 +31,9 @@ namespace backend.Controllers
 
                 if (!loginResponse.IsValid) return BadRequest(loginResponse.Message);
 
-                _authService.AddTokensToCookie(Response, loginResponse.JwtToken, loginResponse.JwtTokenExpire, loginResponse.JwtRefreshToken, loginResponse.JwtRefreshTokenExpire);
+                _authService.CreateOrUpdateJwtTokenCookies(Response, loginResponse.JwtToken, loginResponse.JwtTokenExpire, loginResponse.JwtRefreshToken, loginResponse.JwtRefreshTokenExpire);
 
-                // Should remove this dto after finished implementation since tokens are stored as cookies
-                return Ok(new UserAccessDto
-                {
-                    AccessToken = loginResponse.JwtToken,
-                    RefreshToken = loginResponse.JwtRefreshToken
-                });
+                return Ok();
             }
             catch (Exception ex)
             {
@@ -66,11 +60,48 @@ namespace backend.Controllers
             }
         }
 
-        // [HttpGet]
-        // public async Task<IActionResult> Logout()
-        // {
+        [HttpPost("refreshToken")]
+        public async Task<IActionResult> Refresh()
+        {
+            var userId = User.GetUserId();
+            if (userId == null) return BadRequest();
 
-        // }
+            var refreshToken = Request.Cookies[_config.GetValue<string>("JWT:RefreshCookieName") ?? "refreshToken"];
+            if (refreshToken == null) return BadRequest("Missing refresh token cookie.");
+
+            try
+            {
+                var loginResponse = await _authService.RefreshJwtToken(userId, refreshToken);
+
+                if (!loginResponse.IsValid) return BadRequest(loginResponse.Message);
+
+                _authService.CreateOrUpdateJwtTokenCookies(Response, loginResponse.JwtToken, loginResponse.JwtTokenExpire, loginResponse.JwtRefreshToken, loginResponse.JwtRefreshTokenExpire);
+
+                return Ok();
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(ex);
+            }
+        }
+
+        [HttpPost("logout")]
+        public async Task<IActionResult> Logout()
+        {
+
+            var userId = User.GetUserId();
+            if (userId == null) return BadRequest();
+
+            var response = await _authService.LogoutUser(userId, Request.Cookies[_config.GetValue<string>("JWT:RefreshCookieName") ?? "refreshToken"]);
+
+            if (!response.IsValid)
+            {
+                return BadRequest(response.Message);
+            }
+            _authService.RemoveJwtTokenCookies(Response);
+
+            return Ok();
+        }
 
         [HttpDelete("{id}")]
         [Authorize(Roles = "Admin")]

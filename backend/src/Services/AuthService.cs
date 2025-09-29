@@ -52,13 +52,38 @@ public class AuthService : IAuthService
         await _context.SaveChangesAsync();
 
         var expirationTime = DateTime.UtcNow.AddMinutes(_config.GetValue<int>("JWT:ExpirationTimeInMinutes"));
-        var accessToken = await _tokenService.CreateToken(user, expirationTime);
+        var jwtToken = await _tokenService.CreateToken(user, expirationTime);
 
         response.IsValid = true;
-        response.JwtToken = accessToken;
+        response.JwtToken = jwtToken;
         response.JwtTokenExpire = expirationTime;
         response.JwtRefreshToken = refreshToken.Token;
         response.JwtRefreshTokenExpire = refreshToken.ExpiresOnUtc;
+        return response;
+    }
+
+    public async Task<LoginRegisterResponse> LogoutUser(string userId, string? refreshToken)
+    {
+        var response = new LoginRegisterResponse();
+
+        var user = await _userManager.Users.FirstOrDefaultAsync(x => x.Id == userId);
+        if (user == null)
+        {
+            response.Message = "User not found";
+            return response;
+        }
+
+        // Remove refresh token for that device if available
+        var token = await _context.RefreshTokens.Where(t => t.User == user).Where(t => t.Token == refreshToken).FirstOrDefaultAsync();
+        if (token == null)
+        {
+            response.Message = "Invalid response token";
+        }
+
+        response.IsValid = true;
+        response.Message = "User has been signed out.";
+        await _signinManager.SignOutAsync();
+
         return response;
     }
 
@@ -108,13 +133,13 @@ public class AuthService : IAuthService
         await _userManager.DeleteAsync(userForDelete);
     }
 
-    public HttpResponse AddTokensToCookie(HttpResponse response, string jwtToken, DateTime jwtTokenExpire, string jwtResponseToken, DateTime jwtResponseTokenExpire)
+    public HttpResponse CreateOrUpdateJwtTokenCookies(HttpResponse response, string jwtToken, DateTime jwtTokenExpire, string jwtResponseToken, DateTime jwtResponseTokenExpire)
     {
         var jwtTokenCookieOptions = new CookieOptions
         {
-            HttpOnly = true,         
-            Secure = true,           
-            SameSite = SameSiteMode.Strict, 
+            HttpOnly = true,
+            Secure = true,
+            SameSite = SameSiteMode.Strict,
             Expires = jwtTokenExpire
         };
 
@@ -126,8 +151,51 @@ public class AuthService : IAuthService
             Expires = jwtResponseTokenExpire
         };
 
-        response.Cookies.Append("jwtToken", jwtToken, jwtTokenCookieOptions);
-        response.Cookies.Append("refreshToken", jwtResponseToken, refreshTokenCookieOptions);
+        response.Cookies.Append(_config.GetValue<string>("JWT:JwtCookieName") ?? "jwtToken", jwtToken, jwtTokenCookieOptions);
+        response.Cookies.Append(_config.GetValue<string>("JWT:RefreshCookieName") ?? "refreshToken", jwtResponseToken, refreshTokenCookieOptions);
         return response;
+    }
+
+    public HttpResponse RemoveJwtTokenCookies(HttpResponse response)
+    {
+        response.Cookies.Delete(_config.GetValue<string>("JWT:JwtCookieName") ?? "jwtToken");
+        response.Cookies.Delete(_config.GetValue<string>("JWT:RefreshCookieName") ?? "refreshToken");
+
+        return response;
+    }
+
+    public async Task<LoginRegisterResponse> RefreshJwtToken(string userId, string refreshToken)
+    {
+        var response = new LoginRegisterResponse();
+
+        var user = await _userManager.FindByIdAsync(userId);
+        if (user == null)
+        {
+            response.Message = "Unable to refresh user, please log in again.";
+            return response;
+        }
+
+        var token = await _context.RefreshTokens.Where(t => t.UserId == user.Id).Where(t => t.Token == refreshToken).FirstOrDefaultAsync();
+        if (token == null || token.ExpiresOnUtc <= DateTime.UtcNow)
+        {
+            response.Message = "Unable to refresh user, please log in again.";
+            return response;
+        }
+
+        // Valid refresh token
+        // Current implementation does not renew the refresh token when creating a new jwt token
+
+        var expirationTime = DateTime.UtcNow.AddMinutes(_config.GetValue<int>("JWT:ExpirationTimeInMinutes"));
+        var jwtToken = await _tokenService.CreateToken(user, expirationTime);
+
+        response.IsValid = true;
+        response.Message = "Jwt token refreshed.";
+        response.JwtRefreshToken = refreshToken;
+        response.JwtRefreshTokenExpire = token.ExpiresOnUtc;
+        response.JwtToken = jwtToken;
+        response.JwtTokenExpire = expirationTime;
+
+        return response;
+
     }
 }
