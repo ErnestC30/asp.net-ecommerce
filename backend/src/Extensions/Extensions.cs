@@ -19,6 +19,7 @@ public static class Extensions
 
         builder.Services.AddDbContext<ApiDbContext>(opt => opt.UseNpgsql(connectionString).UseSnakeCaseNamingConvention());
 
+        builder.Services.AddScoped<IAuthService, AuthService>();
         builder.Services.AddScoped<ICategoryService, CategoryService>();
         builder.Services.AddScoped<IProductService, ProductService>();
         builder.Services.AddScoped<IProductImageService, LocalProductImageService>();
@@ -78,7 +79,19 @@ public static class Extensions
 
     }
 
-    public static void ConfigureJwt(this IHostApplicationBuilder builder)
+    public static void ConfigureApplicationCookie(this IHostApplicationBuilder builder)
+    {
+        builder.Services.ConfigureApplicationCookie(options =>
+        {
+            options.Cookie.Name = "appCookie";
+            options.Cookie.HttpOnly = true;
+            options.SlidingExpiration = true;
+            options.ExpireTimeSpan = TimeSpan.FromDays(7);
+            options.Cookie.SecurePolicy = CookieSecurePolicy.Always;
+        });
+    }
+
+    public static void ConfigureAuthentication(this IHostApplicationBuilder builder)
     {
         builder.Services.AddAuthentication(options =>
         {
@@ -102,9 +115,20 @@ public static class Extensions
                 )
             };
 
-            // for debugging
             options.Events = new JwtBearerEvents
             {
+                OnMessageReceived = context =>
+                {
+                    if (context.Request.Cookies.ContainsKey("jwtToken"))
+                    {
+                        context.Token = context.Request.Cookies["jwtToken"];
+                    }
+                    else
+                    {
+                        Console.WriteLine($"Missing jwtToken cookie in request.");
+                    }
+                    return Task.CompletedTask;
+                },
                 OnAuthenticationFailed = context =>
                 {
                     Console.WriteLine($"Authentication failed: {context.Exception.Message}");

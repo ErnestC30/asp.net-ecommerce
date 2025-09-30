@@ -1,10 +1,7 @@
-using Microsoft.AspNetCore.Identity;
-
-using backend.Interfaces;
-using backend.Services;
-using backend.Models;
-using backend.Models.AccountDto;
 using backend.Extensions;
+using backend.Interfaces;
+using backend.Models.AccountDto;
+
 
 namespace backend.Controllers
 {
@@ -12,120 +9,112 @@ namespace backend.Controllers
     [ApiController]
     public class AccountsController : ControllerBase
     {
-        private readonly UserManager<AppUser> _userManager;
-        private readonly ApiDbContext _context;
-        private readonly SignInManager<AppUser> _signinManager;
-        private readonly ITokenService _tokenService;
         private readonly IAddressService _addressService;
+        private readonly IAuthService _authService;
+        private readonly IConfiguration _config;
 
-
-        public AccountsController(UserManager<AppUser> userManager, ApiDbContext context, SignInManager<AppUser> signInManager, ITokenService tokenService, IAddressService addressService)
+        public AccountsController(IAddressService addressService, IAuthService authService, IConfiguration config)
         {
-            _userManager = userManager;
-            _context = context;
-            _signinManager = signInManager;
-            _tokenService = tokenService;
             _addressService = addressService;
+            _authService = authService;
+            _config = config;
         }
 
         [HttpPost("login")]
         public async Task<IActionResult> Login([FromBody] LoginDto loginDto)
         {
-            if (!ModelState.IsValid)
-                return BadRequest(ModelState);
+            if (!ModelState.IsValid) return BadRequest(ModelState);
 
-            var user = await _userManager.Users.FirstOrDefaultAsync(x => x.Email == loginDto.Email);
-            if (user == null) return Unauthorized("Invalid email or password.");
-
-            var result = await _signinManager.CheckPasswordSignInAsync(user, loginDto.Password, false);
-            if (!result.Succeeded) return Unauthorized("Invalid email or password.");
-
-            // change this to cookie instead of token?
-            // - then pass user email / some dto for frontend to store basic user info
-            var refreshToken = new RefreshToken
+            try
             {
-                Token = _tokenService.GenerateRefreshToken(),
-                UserId = user.Id,
-                ExpiresOnUtc = DateTime.UtcNow.AddDays(7)
-            };
+                var loginResponse = await _authService.LoginUser(loginDto.Email, loginDto.Password);
 
-            _context.RefreshTokens.Add(refreshToken);
-            await _context.SaveChangesAsync();
+                if (!loginResponse.IsValid) return BadRequest(loginResponse.Message);
 
-            var accessToken = await _tokenService.CreateToken(user);
+                _authService.CreateOrUpdateJwtTokenCookies(Response, loginResponse.JwtToken, loginResponse.JwtTokenExpire, loginResponse.JwtRefreshToken, loginResponse.JwtRefreshTokenExpire);
 
-            return Ok(new UserAccessDto
+                return Ok();
+            }
+            catch (Exception ex)
             {
-                AccessToken = accessToken,
-                RefreshToken = refreshToken.Token
-            });
-
+                return BadRequest(ex.Message);
+            }
         }
 
         [HttpPost("register")]
         public async Task<IActionResult> Register([FromBody] RegisterDto registerDto)
         {
+            if (!ModelState.IsValid) return BadRequest(ModelState);
+
             try
             {
-                if (!ModelState.IsValid) return BadRequest(ModelState);
+                var registerResponse = await _authService.RegisterUser(registerDto.Email, registerDto.Password);
 
+                if (!registerResponse.IsValid) return BadRequest(registerResponse.Message);
 
-                if (string.IsNullOrEmpty(registerDto.Email) || string.IsNullOrEmpty(registerDto.Password))
-                {
-                    return BadRequest(ModelState);
-                }
-
-                var appUser = new AppUser
-                {
-                    UserName = registerDto.Email,
-                    Email = registerDto.Email,
-                    RegistrationDate = DateTime.UtcNow
-                };
-
-                var createdUser = await _userManager.CreateAsync(appUser, registerDto.Password);
-
-                if (createdUser.Succeeded)
-                {
-                    var roleResult = await _userManager.AddToRoleAsync(appUser, "User");
-                    if (roleResult.Succeeded)
-                    {
-                        return Ok();
-                    }
-                    else
-                    {
-                        return StatusCode(500, roleResult.Errors);
-                    }
-                }
-                else
-                {
-                    return StatusCode(500, createdUser.Errors);
-                }
-
+                return Ok();
             }
-            catch (Exception e)
+            catch (Exception ex)
             {
-                return StatusCode(500, e);
+                return BadRequest(ex);
             }
         }
 
-        // [HttpGet]
-        // public async Task<IActionResult> Logout()
-        // {
+        [HttpPost("refreshToken")]
+        public async Task<IActionResult> Refresh()
+        {
+            var userId = User.GetUserId();
+            if (userId == null) return BadRequest();
 
-        // }
+            var refreshToken = Request.Cookies[_config.GetValue<string>("JWT:RefreshCookieName") ?? "refreshToken"];
+            if (refreshToken == null) return BadRequest("Missing refresh token cookie.");
+
+            try
+            {
+                var loginResponse = await _authService.RefreshJwtToken(userId, refreshToken);
+
+                if (!loginResponse.IsValid) return BadRequest(loginResponse.Message);
+
+                _authService.CreateOrUpdateJwtTokenCookies(Response, loginResponse.JwtToken, loginResponse.JwtTokenExpire, loginResponse.JwtRefreshToken, loginResponse.JwtRefreshTokenExpire);
+
+                return Ok();
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(ex);
+            }
+        }
+
+        [HttpPost("logout")]
+        public async Task<IActionResult> Logout()
+        {
+
+            var userId = User.GetUserId();
+            if (userId == null) return BadRequest();
+
+            var response = await _authService.LogoutUser(userId, Request.Cookies[_config.GetValue<string>("JWT:RefreshCookieName") ?? "refreshToken"]);
+
+            if (!response.IsValid)
+            {
+                return BadRequest(response.Message);
+            }
+            _authService.RemoveJwtTokenCookies(Response);
+
+            return Ok();
+        }
 
         [HttpDelete("{id}")]
         [Authorize(Roles = "Admin")]
         public async Task<IActionResult> DeleteUser(string id)
         {
-            var userForDelete = await _userManager.Users.FirstOrDefaultAsync(x => x.Id == id);
-
-            if (userForDelete == null)
+            try
             {
-                return BadRequest();
+                await _authService.DeleteUser(id);
             }
-
-            await _userManager.DeleteAsync(userForDelete);
+            catch(Exception ex)
+            {
+                return BadRequest(ex.Message);
+            }
             return Ok();
         }
 

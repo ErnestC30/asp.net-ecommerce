@@ -9,9 +9,7 @@ namespace backend.Interfaces;
 
 public interface ITokenService
 {
-    Task<string> CreateToken(AppUser user);
+    Task<string> CreateToken(AppUser user, DateTime expirationTime);
 
     string GenerateRefreshToken();
-
-    string GenerateAccessTokenFromRefreshToken(string refreshToken);
 }

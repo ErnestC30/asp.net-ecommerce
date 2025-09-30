@@ -36,7 +36,7 @@ namespace backend.Services
             _key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(signingKey));
         }
 
-        public async Task<string> CreateToken(AppUser user)
+        public async Task<string> CreateToken(AppUser user, DateTime expirationTime)
         {
             var claims = new List<Claim>();
 
@@ -57,12 +57,11 @@ namespace backend.Services
             claims.AddRange(userRoles.Select(role => new Claim(ClaimTypes.Role, role)));
 
             var creds = new SigningCredentials(_key, SecurityAlgorithms.HmacSha512Signature);
-            var expirationTime = _config.GetValue<int>("JWT:ExpirationTimeInMinutes");
 
             var tokenDescriptor = new SecurityTokenDescriptor
             {
                 Subject = new ClaimsIdentity(claims),
-                Expires = DateTime.UtcNow.AddMinutes(expirationTime),
+                Expires = expirationTime,
                 SigningCredentials = creds,
                 Issuer = _config["JWT:Issuer"],
                 Audience = _config["JWT:Audience"]
@@ -82,35 +81,6 @@ namespace backend.Services
                 rng.GetBytes(randomNumber);
                 return Convert.ToBase64String(randomNumber);
             }
-        }
-
-        public string GenerateAccessTokenFromRefreshToken(string refreshToken)
-        {
-            // WIP
-            // read refreshtoken to grab the user
-            var tokenHandler = new JwtSecurityTokenHandler();
-
-            // var principal = tokenHandler.ValidateToken(refreshToken, new TokenValidationParameters
-            // {
-            //     ValidateIssuerSigningKey = true,
-            //     IssuerSigningKey = new SymmetricSecurityKey(_key),
-            //     ValidateIssuer = false,
-            //     ValidateAudience = false,
-            //     ValidateLifetime = false // Do not check expiration here
-            // }, out SecurityToken validatedToken);
-
-            // var userId = principal.FindFirst(JwtRegisteredClaimNames.Email)?.Value;
-
-            // Console.WriteLine(userId);
-
-            var tokenDescriptor = new SecurityTokenDescriptor
-            {
-
-            };
-
-            var token = tokenHandler.CreateToken(tokenDescriptor);
-            var tokenString = tokenHandler.WriteToken(token);
-            return tokenString;
         }
     }
 }
