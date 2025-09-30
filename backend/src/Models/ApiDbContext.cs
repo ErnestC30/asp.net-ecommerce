@@ -171,7 +171,7 @@ namespace backend.Models
             var setupBasePath = _config["SetupData:BasePath"] ?? "";
 
             string categoriesJson = File.ReadAllText(Path.Combine(setupBasePath, "categories.json"));
-            List<CreateCategoryDto> categoryDtos = JsonConvert.DeserializeObject<List<CreateCategoryDto>>(categoriesJson) ?? new List<CreateCategoryDto>(); ;
+            List<CategoryCreateDto> categoryDtos = JsonConvert.DeserializeObject<List<CategoryCreateDto>>(categoriesJson) ?? new List<CategoryCreateDto>(); ;
             var categories = categoryDtos.Select((c, idx) => new Category
             {
                 Id = idx + 1,

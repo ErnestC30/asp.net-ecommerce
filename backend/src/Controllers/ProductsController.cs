@@ -45,7 +45,6 @@ namespace backend.Controllers
         // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
         [HttpPut("{id}")]
         [Authorize(Roles = "Admin")]
-        // public async Task<IActionResult> PutProduct(long id, Product product)
         public async Task<IActionResult> PutProduct(long id, [FromBody] ProductModificationDto modifyProductDto)
         {
 

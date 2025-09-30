@@ -71,7 +71,7 @@ namespace backend.Controllers
         [HttpPost]
         [Authorize(Roles = "Admin")]
 
-        public async Task<ActionResult<Category>> PostCategory([FromBody] CreateCategoryDto dto)
+        public async Task<ActionResult<Category>> PostCategory([FromBody] CategoryCreateDto dto)
         {
 
             var category = new Category
