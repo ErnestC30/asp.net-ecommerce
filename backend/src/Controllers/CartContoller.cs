@@ -25,7 +25,7 @@ namespace backend.Controllers
         {
             var userId = User.GetUserId();
 
-            if (userId == null) return BadRequest();
+            if (userId == null) return Unauthorized();
 
             var cart = await _cartService.GetCartByUserId(userId);
             var cartDto = _cartService.CartToCartDisplayDto(cart);
@@ -42,7 +42,7 @@ namespace backend.Controllers
 
             var userId = User.GetUserId();
 
-            if (userId == null) return BadRequest();
+            if (userId == null) return Unauthorized();
 
             try
             {
@@ -64,7 +64,7 @@ namespace backend.Controllers
 
             var userId = User.GetUserId();
 
-            if (userId == null) return BadRequest();
+            if (userId == null) return Unauthorized();
 
             try
             {
