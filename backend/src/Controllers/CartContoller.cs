@@ -12,14 +12,10 @@ namespace backend.Controllers
     [ApiController]
     public class CartController : ControllerBase
     {
-        private readonly UserManager<AppUser> _userManager;
-        private readonly IHttpContextAccessor _httpContextAccessor;
         private readonly ICartService _cartService;
 
-        public CartController(UserManager<AppUser> userManager, ApiDbContext context, IHttpContextAccessor httpContextAccessor, ICartService cartService)
+        public CartController(ICartService cartService)
         {
-            _userManager = userManager;
-            _httpContextAccessor = httpContextAccessor;
             _cartService = cartService;
         }
 
