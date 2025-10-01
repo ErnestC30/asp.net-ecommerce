@@ -1,3 +1,5 @@
+using NpgsqlTypes;
+
 namespace backend.Models;
 
 public class Product : BaseEntity

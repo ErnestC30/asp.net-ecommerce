@@ -17,21 +17,21 @@ public class AddressService : IAddressService
         _userManager = userManager;
     }
 
-    public async Task<ICollection<UserAddressViewDto>> GetUserAddresses(string userId)
+    public async Task<AppUser> GetAppUser(string userId)
     {
         var user = await _userManager.FindByIdAsync(userId);
         if (user == null) throw new Exception($"User with id {userId} not found.");
+        return user;
+    }
 
-        var addresses = await _context.UserAddresses.Where(ua => ua.UserId == userId).Select(ua => UserAddressToUserAddressViewDto(ua)).ToListAsync();
+    public async Task<ICollection<UserAddressViewDto>> GetUserAddresses(AppUser user)
+    {
+        var addresses = await _context.UserAddresses.Where(ua => ua.UserId == user.Id).Select(ua => UserAddressToUserAddressViewDto(ua)).ToListAsync();
         return addresses;
     }
 
-    public async Task<UserAddress> CreateUserAddress(UserAddressCreateDto createDto, string userId)
+    public async Task<UserAddress> CreateUserAddress(UserAddressCreateDto createDto, AppUser user)
     {
-
-        var user = await _userManager.FindByIdAsync(userId);
-        if (user == null) throw new Exception($"User with id {userId} not found.");
-
         if (createDto.IsPrimary) await ResetPrimaryAddress(user);
 
         var address = new UserAddress
@@ -52,11 +52,8 @@ public class AddressService : IAddressService
         return address;
     }
 
-    public async Task<UserAddress> EditUserAddress(UserAddressEditDto editDto, string addressGuid, string userId)
+    public async Task<UserAddress> EditUserAddress(UserAddressEditDto editDto, string addressGuid, AppUser user)
     {
-        var user = await _userManager.FindByIdAsync(userId);
-        if (user == null) throw new Exception($"User with id {userId} not found.");
-
         var address = await _context.UserAddresses.FirstOrDefaultAsync(ua => ua.Uuid == Guid.Parse(addressGuid)) ?? throw new Exception($"Could not find matching user address.");
         if (address.UserId != user.Id) throw new Exception("Invalid user for editing address");
 

@@ -111,30 +111,11 @@ namespace backend.Controllers
             {
                 await _authService.DeleteUser(id);
             }
-            catch(Exception ex)
+            catch (Exception ex)
             {
                 return BadRequest(ex.Message);
             }
             return Ok();
-        }
-
-        [HttpPost("addresses")]
-        [Authorize]
-        public async Task<IActionResult> CreateUserAddress([FromBody] UserAddressCreateDto createDto)
-        {
-            var userId = User.GetUserId();
-            if (userId == null) return BadRequest();
-
-            try
-            {
-                await _addressService.CreateUserAddress(createDto, userId);
-                return NoContent();
-            }
-            catch
-            {
-                return BadRequest();
-            }
-
         }
 
         [HttpGet("addresses")]
@@ -146,7 +127,8 @@ namespace backend.Controllers
 
             try
             {
-                var addressesDto = await _addressService.GetUserAddresses(userId);
+                var user = await _addressService.GetAppUser(userId);
+                var addressesDto = await _addressService.GetUserAddresses(user);
                 return Ok(addressesDto);
             }
             catch
@@ -154,6 +136,28 @@ namespace backend.Controllers
                 return BadRequest();
             }
         }
+
+        [HttpPost("addresses")]
+        [Authorize]
+        public async Task<IActionResult> CreateUserAddress([FromBody] UserAddressCreateDto createDto)
+        {
+            var userId = User.GetUserId();
+            if (userId == null) return BadRequest();
+
+            try
+            {
+                var user = await _addressService.GetAppUser(userId);
+                await _addressService.CreateUserAddress(createDto, user);
+                return NoContent();
+            }
+            catch
+            {
+                return BadRequest();
+            }
+
+        }
+
+
 
         [HttpPut("addresses/{addressGuid}")]
         [Authorize]
@@ -164,7 +168,8 @@ namespace backend.Controllers
 
             try
             {
-                await _addressService.EditUserAddress(editDto, addressGuid, userId);
+                var user = await _addressService.GetAppUser(userId);
+                await _addressService.EditUserAddress(editDto, addressGuid, user);
                 return NoContent();
             }
             catch
