@@ -11,8 +11,8 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using NSubstitute;
 using System.Text;
-using Xunit;
 
+// Need to update namespace from default to prevent namespace clash
 namespace backend.ProductServiceTests.UnitTests;
 
 /*
